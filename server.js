@@ -23,7 +23,7 @@ try {
   db.initialize();
   console.log('✅ Database initialized');
 } catch (error) {
-  console.error('❌ Database initialization error:', error);
+  console.error('❌ Database initialization error:', error.message);
 }
 
 // Middleware
@@ -120,12 +120,12 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`
-╔════════════════���═══════════════════════╗`);
-  console.log(`║  🚀 YouTube Automation App Running   ║`);
+╔════════════════════════════════════════════════════════╗`);
+  console.log(`║  🚀 YouTube Automation App Running                   ║`);
   console.log(`║  ✅ Port: ${PORT}`);
   console.log(`║  🌐 URL: http://localhost:${PORT}`);
   console.log(`║  📊 Dashboard: http://localhost:${PORT}/dashboard`);
-  console.log(`╚════════════════════════════════════════╝
+  console.log(`╚════════════════════════════════════════════════════════╝
 `);
 });
 
