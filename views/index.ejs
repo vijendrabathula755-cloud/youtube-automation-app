@@ -17,9 +17,6 @@
       <div class="user-info">
         <img src="<%= user.photo %>" alt="Profile">
         <span><%= user.name %></span>
-        <% if (demoMode) { %>
-          <span class="badge">DEMO MODE</span>
-        <% } %>
         <a href="/auth/logout">Logout</a>
       </div>
       <nav class="nav">
