@@ -5,12 +5,26 @@ const passport = require('passport');
 const cors = require('cors');
 const path = require('path');
 const bodyParser = require('body-parser');
+const fs = require('fs');
 
 const app = express();
 
+// Create required directories
+const dirs = [process.env.TEMP_DIR || './temp', process.env.VIDEO_OUTPUT_DIR || './uploads/videos', './database'];
+dirs.forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
+
 // Initialize Database
 const db = require('./database/init');
-db.initialize();
+try {
+  db.initialize();
+  console.log('✅ Database initialized');
+} catch (error) {
+  console.error('❌ Database initialization error:', error);
+}
 
 // Middleware
 app.use(cors());
@@ -22,17 +36,26 @@ app.set('views', path.join(__dirname, 'views'));
 
 // Session
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'youtube-automation-secret-key',
+  secret: process.env.SESSION_SECRET || 'youtube-automation-secret-key-2024',
   resave: false,
-  saveUninitialized: true,
-  cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }
+  saveUninitialized: false,
+  cookie: { 
+    secure: false, 
+    maxAge: 24 * 60 * 60 * 1000,
+    httpOnly: true
+  }
 }));
 
 // Passport
 app.use(passport.initialize());
 app.use(passport.session());
 
-require('./config/oauth')(passport);
+try {
+  require('./config/oauth')(passport);
+  console.log('✅ OAuth configured');
+} catch (error) {
+  console.error('⚠️  OAuth configuration warning:', error.message);
+}
 
 // Routes
 app.use('/auth', require('./routes/auth'));
@@ -40,6 +63,11 @@ app.use('/api/channels', require('./routes/channels'));
 app.use('/api/videos', require('./routes/videos'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/schedule', require('./routes/schedule'));
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 // Views
 app.get('/', (req, res) => {
@@ -68,19 +96,37 @@ app.get('/settings', (req, res) => {
 });
 
 // Start Scheduler
-const scheduler = require('./services/scheduler');
-scheduler.startScheduler();
+try {
+  const scheduler = require('./services/scheduler');
+  scheduler.startScheduler();
+  console.log('✅ Scheduler started');
+} catch (error) {
+  console.error('⚠️  Scheduler error:', error.message);
+}
+
+// 404 Handler
+app.use((req, res) => {
+  res.status(404).json({ error: 'Route not found' });
+});
 
 // Error Handler
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
+  console.error('❌ Application error:', err);
+  res.status(err.status || 500).json({ 
+    error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong!' 
+  });
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 YouTube Automation App running on http://localhost:${PORT}`);
-  console.log(`📊 Dashboard: http://localhost:${PORT}/dashboard`);
+  console.log(`
+╔════════════════���═══════════════════════╗`);
+  console.log(`║  🚀 YouTube Automation App Running   ║`);
+  console.log(`║  ✅ Port: ${PORT}`);
+  console.log(`║  🌐 URL: http://localhost:${PORT}`);
+  console.log(`║  📊 Dashboard: http://localhost:${PORT}/dashboard`);
+  console.log(`╚════════════════════════════════════════╝
+`);
 });
 
 module.exports = app;
