@@ -6,6 +6,7 @@ const cors = require('cors');
 const path = require('path');
 const bodyParser = require('body-parser');
 const fs = require('fs');
+const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 
@@ -46,15 +47,36 @@ app.use(session({
   }
 }));
 
-// Passport
-app.use(passport.initialize());
-app.use(passport.session());
+// Simple Auth - Create demo user if SKIP_AUTH is true
+if (process.env.SKIP_AUTH === 'true') {
+  console.log('⚠️  Using DEMO MODE (no authentication required)');
+  
+  const demoUser = {
+    id: 'demo-user-' + uuidv4(),
+    email: 'demo@youtube-automation.app',
+    name: 'Demo User',
+    photo: 'https://api.dicebear.com/7.x/avataaars/svg?seed=DemoUser',
+    googleAccessToken: 'demo-token',
+    googleRefreshToken: 'demo-token'
+  };
 
-try {
-  require('./config/oauth')(passport);
-  console.log('✅ OAuth configured');
-} catch (error) {
-  console.error('⚠️  OAuth configuration warning:', error.message);
+  // Auto-login middleware
+  app.use((req, res, next) => {
+    req.user = demoUser;
+    req.isAuthenticated = () => true;
+    next();
+  });
+} else {
+  // Passport
+  app.use(passport.initialize());
+  app.use(passport.session());
+
+  try {
+    require('./config/oauth')(passport);
+    console.log('✅ OAuth configured');
+  } catch (error) {
+    console.error('⚠️  OAuth configuration warning:', error.message);
+  }
 }
 
 // Routes
@@ -71,28 +93,33 @@ app.get('/health', (req, res) => {
 
 // Views
 app.get('/', (req, res) => {
-  res.render('index', { user: req.user });
+  res.render('index', { user: req.user, demoMode: process.env.SKIP_AUTH === 'true' });
 });
 
 app.get('/dashboard', (req, res) => {
-  if (!req.isAuthenticated()) {
+  if (!req.isAuthenticated || !req.isAuthenticated()) {
     return res.redirect('/');
   }
   res.render('dashboard', { user: req.user });
 });
 
 app.get('/channels', (req, res) => {
-  if (!req.isAuthenticated()) {
+  if (!req.isAuthenticated || !req.isAuthenticated()) {
     return res.redirect('/');
   }
   res.render('channels', { user: req.user });
 });
 
 app.get('/settings', (req, res) => {
-  if (!req.isAuthenticated()) {
+  if (!req.isAuthenticated || !req.isAuthenticated()) {
     return res.redirect('/');
   }
   res.render('settings', { user: req.user });
+});
+
+// Demo logout
+app.get('/auth/logout', (req, res) => {
+  res.redirect('/');
 });
 
 // Start Scheduler
@@ -122,6 +149,9 @@ app.listen(PORT, () => {
   console.log(`
 ╔════════════════════════════════════════════════════════╗`);
   console.log(`║  🚀 YouTube Automation App Running                   ║`);
+  if (process.env.SKIP_AUTH === 'true') {
+    console.log(`║  🤖 DEMO MODE (Auto-logged in)                      ║`);
+  }
   console.log(`║  ✅ Port: ${PORT}`);
   console.log(`║  🌐 URL: http://localhost:${PORT}`);
   console.log(`║  📊 Dashboard: http://localhost:${PORT}/dashboard`);

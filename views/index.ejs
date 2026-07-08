@@ -17,6 +17,9 @@
       <div class="user-info">
         <img src="<%= user.photo %>" alt="Profile">
         <span><%= user.name %></span>
+        <% if (demoMode) { %>
+          <span class="badge">DEMO MODE</span>
+        <% } %>
         <a href="/auth/logout">Logout</a>
       </div>
       <nav class="nav">
@@ -24,6 +27,15 @@
         <a href="/channels">📺 Channels</a>
         <a href="/settings">⚙️ Settings</a>
       </nav>
+      
+      <div class="welcome-section">
+        <h2>Welcome to YouTube Automation! 🎉</h2>
+        <p>Ready to automate your YouTube channel?</p>
+        <div class="quick-actions">
+          <a href="/channels" class="btn btn-primary">➕ Connect Your Channel</a>
+          <a href="/dashboard" class="btn btn-secondary">📊 View Dashboard</a>
+        </div>
+      </div>
     <% } else { %>
       <div class="login-section">
         <h2>Welcome to YouTube Automation</h2>
