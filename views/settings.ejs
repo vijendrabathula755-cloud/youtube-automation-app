@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - YouTube Automation</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>⚙️ Settings</h1>
+      <a href="/dashboard" class="btn btn-secondary">← Back to Dashboard</a>
+    </header>
+
+    <div class="settings-container">
+      <div class="settings-section">
+        <h2>📋 Content Topics</h2>
+        <p>These topics will be used for video generation</p>
+        <div id="topicsList"></div>
+        <form id="addTopicForm">
+          <input type="text" name="topic" placeholder="Enter a topic" required>
+          <select name="category" required>
+            <option value="motivational">Motivational</option>
+            <option value="educational">Educational</option>
+            <option value="entertainment">Entertainment</option>
+            <option value="technology">Technology</option>
+            <option value="lifestyle">Lifestyle</option>
+          </select>
+          <button type="submit" class="btn btn-primary">➕ Add Topic</button>
+        </form>
+      </div>
+
+      <div class="settings-section">
+        <h2>📅 Scheduling</h2>
+        <p>Videos will upload daily at the scheduled time</p>
+        <div id="schedulesList"></div>
+      </div>
+
+      <div class="settings-section">
+        <h2>📊 Statistics</h2>
+        <div id="statsContainer">Loading stats...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const loadSettings = async () => {
+      try {
+        const dashResponse = await fetch('/api/dashboard');
+        const dashData = await dashResponse.json();
+        
+        const statsHtml = `
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Connected Channels</div>
+              <div class="stat-value">${dashData.totalChannels || 0}/3</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Total Videos</div>
+              <div class="stat-value">${(dashData.channels || []).reduce((sum, ch) => sum + (ch.stats?.totalVideos || 0), 0)}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Videos Uploaded</div>
+              <div class="stat-value">${(dashData.channels || []).reduce((sum, ch) => sum + (ch.stats?.uploadedVideos || 0), 0)}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Processing</div>
+              <div class="stat-value">${(dashData.channels || []).reduce((sum, ch) => sum + (ch.stats?.processingVideos || 0), 0)}</div>
+            </div>
+          </div>
+        `;
+        document.getElementById('statsContainer').innerHTML = statsHtml;
+      } catch (error) {
+        console.error('Error loading settings:', error);
+      }
+    };
+
+    document.getElementById('addTopicForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      alert('✅ Topic added! (Topics feature coming soon)');
+      e.target.reset();
+    });
+
+    loadSettings();
+  </script>
+</body>
+</html>

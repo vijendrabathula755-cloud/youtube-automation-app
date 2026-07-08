@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - YouTube Automation</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>📊 Dashboard</h1>
+      <div>
+        <a href="/channels" class="btn btn-primary">➕ Add Channel</a>
+        <a href="/" class="btn btn-secondary">← Home</a>
+      </div>
+    </header>
+
+    <div class="channels-grid" id="channelsContainer">
+      <div class="loading">Loading channels...</div>
+    </div>
+  </div>
+
+  <script>
+    const loadDashboard = async () => {
+      try {
+        const response = await fetch('/api/dashboard');
+        if (!response.ok) throw new Error('Failed to load dashboard');
+        const data = await response.json();
+        renderChannels(data.channels || []);
+      } catch (error) {
+        document.getElementById('channelsContainer').innerHTML = `<div class="error">Error: ${error.message}</div>`;
+      }
+    };
+
+    const renderChannels = (channels) => {
+      const container = document.getElementById('channelsContainer');
+      if (channels.length === 0) {
+        container.innerHTML = '<div class="no-data">No channels connected. <a href="/channels">Add one now</a></div>';
+        return;
+      }
+
+      container.innerHTML = channels.map(channel => `
+        <div class="channel-card">
+          <img src="${channel.channelImage || '/images/default-channel.png'}" alt="${channel.channelName}" onerror="this.src='/images/default-channel.png'">
+          <h2>${channel.channelName}</h2>
+          <p>🌍 Language: ${channel.language}</p>
+          <p>📹 Format: ${channel.videoFormat}</p>
+          <div class="stats">
+            <div><strong>${channel.stats?.totalVideos || 0}</strong> Total</div>
+            <div><strong>${channel.stats?.uploadedVideos || 0}</strong> Uploaded</div>
+            <div><strong>${channel.stats?.processingVideos || 0}</strong> Processing</div>
+          </div>
+          <div class="recent-videos">
+            <h3>Recent Videos</h3>
+            ${(channel.recentVideos || []).length > 0 ? channel.recentVideos.map(v => `
+              <div class="video-item">
+                <span>${v.title || 'Untitled'}</span>
+                <span class="status ${v.status}">${v.status}</span>
+              </div>
+            `).join('') : '<p>No videos yet</p>'}
+          </div>
+          <button onclick="generateVideo('${channel.id}')" class="btn btn-primary">🎬 Generate Video</button>
+        </div>
+      `).join('');
+    };
+
+    const generateVideo = async (channelId) => {
+      const topic = prompt('Enter topic (or leave empty for random):');
+      try {
+        const response = await fetch('/api/videos/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            channelId, 
+            topic: topic || null,
+            language: 'english',
+            videoFormat: 'long'
+          })
+        });
+        const data = await response.json();
+        if (response.ok) {
+          alert('✅ Video generation started! ID: ' + data.videoId);
+          setTimeout(loadDashboard, 2000);
+        } else {
+          alert('❌ Error: ' + (data.error || 'Unknown error'));
+        }
+      } catch (error) {
+        alert('❌ Error: ' + error.message);
+      }
+    };
+
+    loadDashboard();
+    setInterval(loadDashboard, 15000);
+  </script>
+</body>
+</html>
